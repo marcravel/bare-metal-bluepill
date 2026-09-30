@@ -1,0 +1,15 @@
+{
+  "configurations": [{
+    "name": "BluePill",
+    "includePath": [
+      "${workspaceFolder}/libopencm3/include",
+      "${workspaceFolder}/my-project",
+      "${workspaceFolder}/my-common-code"
+    ],
+    "defines": ["STM32F1"],
+    "compilerPath": "/usr/bin/arm-none-eabi-gcc",
+    "cStandard": "c11",
+    "intelliSenseMode": "gcc-arm"
+  }],
+  "version": 4
+}
