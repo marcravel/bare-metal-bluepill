@@ -24,7 +24,7 @@
 #define LED_PIN GPIO13
 
 static void rcc_setup(void) {
-	rcc_clock_setup_pll(&rcc_hse_configs[RCC_CLOCK_HSE12_72MHZ]);
+	rcc_clock_setup_pll(&rcc_hse_configs[RCC_CLOCK_HSE8_72MHZ]);
 }
 
 static void gpio_setup(void)
