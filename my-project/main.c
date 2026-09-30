@@ -73,9 +73,14 @@ int main(void)
 		// for (i = 0; i < 800000; i++)	/* Wait a bit. */
 		// 	__asm__("nop");
 
+		gpio_set(LED_PORT, LED_PIN);	/* LED off */
+		delay_cycles(72000000 / 64);
+		gpio_clear(LED_PORT, LED_PIN);	/* LED on */
+		delay_cycles(72000000 / 16);
+
 		/* Using API function gpio_toggle(): */
-		gpio_toggle(LED_PORT, LED_PIN);	/* LED on/off */
-		delay_cycles(72000000 / 32);
+		// gpio_toggle(LED_PORT, LED_PIN);	/* LED on/off */
+		// delay_cycles(72000000 / 32);
 	}
 
 	return 0;
