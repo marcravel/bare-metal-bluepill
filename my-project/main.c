@@ -18,69 +18,73 @@
  */
 
 #include <libopencm3/stm32/rcc.h>
+#include <libopencm3/stm32/flash.h>
 #include <libopencm3/stm32/gpio.h>
+#include <libopencm3/cm3/systick.h>
+#include <libopencm3/cm3/vector.h>
 
-#define LED_PORT GPIOC
-#define LED_PIN GPIO13
+const struct rcc_clock_scale custom_clock_config = {
+	// hsi-8, pll to 48
+	.pll_source = RCC_CFGR_PLLSRC_HSE_CLK,
+	.pll_mul = RCC_CFGR_PLLMUL_PLL_CLK_MUL6,
+	.prediv1 = RCC_CFGR2_PREDIV_NODIV,
+	.hpre = RCC_CFGR_HPRE_NODIV,
+	.ppre1 = RCC_CFGR_PPRE_DIV2,
+	.ppre2 = RCC_CFGR_PPRE_NODIV,
+	.adcpre = RCC_CFGR_ADCPRE_DIV8,
+	.usbpre = RCC_CFGR_USBPRE_PLL_CLK_NODIV,
+	.flash_waitstates = 1,
+	.ahb_frequency = 48e6,
+	.apb1_frequency = 24e6,
+	.apb2_frequency = 48e6,
+};
+
+#define LED_PORT GPIOA
+#define LED_PIN GPIO5
+
+#define SYSTICK_FREQ 1000
+
+volatile uint64_t systick_counter = 0;
+void sys_tick_handler(void) {
+	/* This function is called every SYSTICK_FREQ milliseconds. */
+	systick_counter++;
+}
+
+static uint64_t get_tick_count(void) {
+	return systick_counter;
+}
+
+static void systick_setup(void) {
+	systick_set_frequency(SYSTICK_FREQ, rcc_ahb_frequency);
+	systick_counter_enable();
+	systick_interrupt_enable();
+}
 
 static void rcc_setup(void) {
-	rcc_clock_setup_pll(&rcc_hse_configs[RCC_CLOCK_HSE8_72MHZ]);
+	rcc_clock_setup_pll(&custom_clock_config);
 }
 
 static void gpio_setup(void)
 {
-	/* Enable GPIOC clock. */
-	/* Manually: */
-	// RCC_APB2ENR |= RCC_APB2ENR_IOPCEN;
-	/* Using API functions: */
-	rcc_periph_clock_enable(RCC_GPIOC);
-
-	/* Set GPIO13 (in GPIO port C) to 'output push-pull'. */
-	/* Manually: */
-	// GPIOC_CRH = (GPIO_CNF_OUTPUT_PUSHPULL << (((13 - 8) * 4) + 2));
-	// GPIOC_CRH |= (GPIO_MODE_OUTPUT_2_MHZ << ((13 - 8) * 4));
-	/* Using API functions: */
+	rcc_periph_clock_enable(RCC_GPIOA);
 	gpio_set_mode(LED_PORT, GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, LED_PIN);
-}
-
-static void delay_cycles(uint32_t cycles) {
-	/* Wait a bit. */
-	for(uint32_t i = 0; i < cycles; i++) {
-		__asm__("nop");	
-	}
 }
 
 int main(void)
 {
 	rcc_setup();
 	gpio_setup();
+	systick_setup();
+
+	uint64_t start_time = 0;
 
 	/* Blink the LED (PC13) on the board. */
 	while (1) {
-		/* Manually: */
-		// GPIOC_BSRR = LED_PIN;		/* LED off */
-		// for (i = 0; i < 800000; i++)	/* Wait a bit. */
-		// 	__asm__("nop");
-		// GPIOC_BRR = LED_PIN;		/* LED on */
-		// for (i = 0; i < 800000; i++)	/* Wait a bit. */
-		// 	__asm__("nop");
-
-		/* Using API functions gpio_set()/gpio_clear(): */
-		// gpio_set(LED_PORT, LED_PIN);	/* LED off */
-		// for (i = 0; i < 800000; i++)	/* Wait a bit. */
-		// 	__asm__("nop");
-		// gpio_clear(LED_PORT, LED_PIN);	/* LED on */
-		// for (i = 0; i < 800000; i++)	/* Wait a bit. */
-		// 	__asm__("nop");
-
-		gpio_set(LED_PORT, LED_PIN);	/* LED off */
-		delay_cycles(72000000 / 64);
-		gpio_clear(LED_PORT, LED_PIN);	/* LED on */
-		delay_cycles(72000000 / 16);
-
-		/* Using API function gpio_toggle(): */
-		// gpio_toggle(LED_PORT, LED_PIN);	/* LED on/off */
-		// delay_cycles(72000000 / 32);
+		if (get_tick_count() - start_time > 1000){
+			gpio_toggle(LED_PORT, LED_PIN);
+			start_time = get_tick_count();
+			
+		}
 	}
 
 	return 0;
