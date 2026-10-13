@@ -24,7 +24,7 @@
 #include <libopencm3/cm3/vector.h>
 
 const struct rcc_clock_scale custom_clock_config = {
-	// hsi-8, pll to 48
+	// hse-8, pll to 48
 	.pll_source = RCC_CFGR_PLLSRC_HSE_CLK,
 	.pll_mul = RCC_CFGR_PLLMUL_PLL_CLK_MUL6,
 	.prediv1 = RCC_CFGR2_PREDIV_NODIV,
