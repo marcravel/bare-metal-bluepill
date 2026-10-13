@@ -67,7 +67,11 @@ static void rcc_setup(void) {
 static void gpio_setup(void)
 {
 	rcc_periph_clock_enable(RCC_GPIOA);
+	rcc_periph_clock_enable(RCC_GPIOB);
+	rcc_periph_clock_enable(RCC_GPIOC);
 	gpio_set_mode(LED_PORT, GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, LED_PIN);
+	gpio_set_mode(GPIOC, GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, GPIO13);
+	gpio_set_mode(GPIOB, GPIO_MODE_INPUT, GPIO_CNF_INPUT_PULL_UPDOWN, GPIO4);
 }
 
 int main(void)
@@ -78,13 +82,20 @@ int main(void)
 
 	uint64_t start_time = 0;
 
-	/* Blink the LED (PC13) on the board. */
+	
 	while (1) {
+		/* Blink the LED */
 		if (get_tick_count() - start_time > 1000){
 			gpio_toggle(LED_PORT, LED_PIN);
 			start_time = get_tick_count();
-			
 		}
+		/* Turn the LED on PC13 */
+		if ((GPIOB_IDR & BIT4) == BIT4) {
+			gpio_set(GPIOC, GPIO13);
+		} else {
+			gpio_clear(GPIOC, GPIO13);
+		}
+		
 	}
 
 	return 0;
