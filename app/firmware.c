@@ -17,85 +17,51 @@
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/flash.h>
 #include <libopencm3/stm32/gpio.h>
-#include <libopencm3/cm3/systick.h>
-#include <libopencm3/cm3/vector.h>
+#include <libopencm3/stm32/rcc.h>
 
-const struct rcc_clock_scale custom_clock_config = {
-	// hse-8, pll to 48
-	.pll_source = RCC_CFGR_PLLSRC_HSE_CLK,
-	.pll_mul = RCC_CFGR_PLLMUL_PLL_CLK_MUL6,
-	.prediv1 = RCC_CFGR2_PREDIV_NODIV,
-	.hpre = RCC_CFGR_HPRE_NODIV,
-	.ppre1 = RCC_CFGR_PPRE_DIV2,
-	.ppre2 = RCC_CFGR_PPRE_NODIV,
-	.adcpre = RCC_CFGR_ADCPRE_DIV8,
-	.usbpre = RCC_CFGR_USBPRE_PLL_CLK_NODIV,
-	.flash_waitstates = 1,
-	.ahb_frequency = 48e6,
-	.apb1_frequency = 24e6,
-	.apb2_frequency = 48e6,
-};
+#include "core/system.h"
 
 #define LED_PORT GPIOA
 #define LED_PIN GPIO5
-
-#define SYSTICK_FREQ 1000
-
-volatile uint64_t systick_counter = 0;
-void sys_tick_handler(void) {
-	/* This function is called every SYSTICK_FREQ milliseconds. */
-	systick_counter++;
-}
-
-static uint64_t get_tick_count(void) {
-	return systick_counter;
-}
-
-static void systick_setup(void) {
-	systick_set_frequency(SYSTICK_FREQ, rcc_ahb_frequency);
-	systick_counter_enable();
-	systick_interrupt_enable();
-}
-
-static void rcc_setup(void) {
-	rcc_clock_setup_pll(&custom_clock_config);
-}
 
 static void gpio_setup(void)
 {
 	rcc_periph_clock_enable(RCC_GPIOA);
 	rcc_periph_clock_enable(RCC_GPIOB);
 	rcc_periph_clock_enable(RCC_GPIOC);
+	
 	gpio_set_mode(LED_PORT, GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, LED_PIN);
 	gpio_set_mode(GPIOC, GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, GPIO13);
 	gpio_set_mode(GPIOB, GPIO_MODE_INPUT, GPIO_CNF_INPUT_PULL_UPDOWN, GPIO4);
+	gpio_clear(GPIOB, GPIO4); /* Pull-down */
 }
 
 int main(void)
 {
-	rcc_setup();
+	system_setup();
 	gpio_setup();
-	systick_setup();
 
 	uint64_t start_time = 0;
 
-	
-	while (1) {
+	while (1)
+	{
 		/* Blink the LED */
-		if (get_tick_count() - start_time > 1000){
+		if (system_get_ticks() - start_time > 1000)
+		{
 			gpio_toggle(LED_PORT, LED_PIN);
-			start_time = get_tick_count();
+			start_time = system_get_ticks();
 		}
-		/* Turn the LED on PC13 */
-		if ((GPIOB_IDR & BIT4) == BIT4) {
+		/* Turn the LED on PC13 with the button on PC4 */
+		if ((GPIOB_IDR & BIT4) == BIT4)
+		{
 			gpio_set(GPIOC, GPIO13);
-		} else {
+		}
+		else
+		{
 			gpio_clear(GPIOC, GPIO13);
 		}
-		
 	}
 
 	return 0;
